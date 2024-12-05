@@ -19,7 +19,7 @@ A web application that analyzes faces from LinkedIn profile images to determine 
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/LETME2X/race_detection
 cd face-analyzer
 ```
 

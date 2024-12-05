@@ -479,7 +479,7 @@ async def clear_database():
         
         # Clear profile images directory
         for file in IMAGES_DIR.glob("*"):
-            if file.is_file():
+            if file.is_file() and file.name != '.gitkeep':
                 file.unlink()
         
         return JSONResponse(content={"message": "Database and images cleared successfully"})

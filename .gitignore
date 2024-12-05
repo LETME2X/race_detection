@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+env/
+venv/
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Uploaded files
+profile_images/*
+!profile_images/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db 

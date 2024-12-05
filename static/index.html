@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .upload-section {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .results-section {
+            display: none;
+            margin-top: 25px;
+        }
+        .results-section h2 {
+            margin-bottom: 15px;
+        }
+        .profile-card {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 15px 0;
+            padding: 15px;
+            gap: 20px;
+            align-items: flex-start;
+            width: 100%;
+        }
+        .image-container {
+            flex: 0 0 120px;
+            position: relative;
+            text-align: center;
+        }
+        .image-container h3 {
+            margin: 8px 0 0 0;
+            font-size: 1.1em;
+        }
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .profile-details {
+            flex: 1;
+            min-width: 0;
+            padding-right: 15px;
+        }
+        .primary-race {
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .primary-race p {
+            margin: 8px 0;
+        }
+        .status-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            font-weight: 500;
+        }
+        .status-error {
+            background-color: #ffebee;
+            color: #c62828;
+            font-weight: 500;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .custom-file-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #2196F3;
+            color: white;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .custom-file-upload:hover {
+            background-color: #1976D2;
+        }
+        .delete-button {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .delete-button:hover {
+            background-color: #c82333;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar {
+            width: 0;
+            height: 20px;
+            background: linear-gradient(90deg, #2196F3, #4CAF50);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        .progress-text {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Analyzer</h1>
+        
+        <div class="upload-section">
+            <h2>Choose CSV File</h2>
+            <label for="csvFile" class="custom-file-upload">
+                Select File
+            </label>
+            <input type="file" id="csvFile" accept=".csv" />
+            <div id="fileName"></div>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-text">0%</div>
+                </div>
+            </div>
+            <div id="uploadStatus"></div>
+            <button id="clearBtn" class="delete-button">Clear All Data</button>
+        </div>
+        
+        <div id="results" class="results-section">
+            <h2>Results</h2>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if (fileName) {
+                document.getElementById('fileName').textContent = `Selected file: ${fileName}`;
+                uploadCSV(e.target.files[0]);
+            }
+        });
+
+        async function uploadCSV(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = progressBar.querySelector('.progress-text');
+            
+            progressContainer.style.display = 'block';
+            document.getElementById('uploadStatus').innerHTML = 'Uploading and processing...';
+            
+            // Start progress animation
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${Math.round(progress)}%`;
+                }
+            }, 500);
+            
+            try {
+                const response = await fetch('/upload-csv/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const results = await response.json();
+                
+                // Complete the progress bar
+                clearInterval(progressInterval);
+                progress = 100;
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+                
+                // Hide progress bar after a delay
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 1000);
+                
+                displayResults(results);
+                
+            } catch (error) {
+                clearInterval(progressInterval);
+                progressContainer.style.display = 'none';
+                document.getElementById('uploadStatus').innerHTML = `Error: ${error.message}`;
+            }
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            resultsContainer.innerHTML = '';
+            
+            if (!Array.isArray(results)) {
+                resultsContainer.innerHTML = '<div class="error-message">Invalid response format</div>';
+                return;
+            }
+            
+            results.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'profile-card';
+                
+                let content = `
+                    <div class="image-container">
+                        <img src="/profile_images/${result.name.replace(' ', '_')}_${index}.jpg" 
+                             alt="${result.name}" 
+                             class="profile-image"
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='"/>
+                        <h3>${result.name}</h3>
+                    </div>
+                    <div class="profile-details">
+                `;
+                
+                if (result.success && result.analysis) {
+                    const analysis = result.analysis;
+                    content += `
+                        <div class="primary-race">
+                            <p><strong>Primary Race:</strong> ${analysis.detailed_analysis['Primary Race']}</p>
+                            <p><strong>Sub Ethnicity:</strong> ${analysis.detailed_analysis['Sub Ethnicity']}</p>
+                            <p><strong>Age:</strong> ${analysis.age}</p>
+                            <p><strong>Gender:</strong> ${analysis.gender}</p>
+                        </div>
+                    `;
+                    
+                } else {
+                    content += `
+                        <div class="status-error">
+                            Error: ${result.error || 'Analysis failed'}
+                        </div>
+                    `;
+                }
+                
+                content += `</div>`;
+                resultDiv.innerHTML = content;
+                resultsContainer.appendChild(resultDiv);
+            });
+            
+            document.getElementById('uploadStatus').innerHTML = 'Processing complete';
+            document.getElementById('results').style.display = 'block';
+        }
+
+        // Update clear button functionality to reset progress bar
+        document.getElementById('clearBtn').addEventListener('click', async function() {
+            if (!confirm('Are you sure you want to clear all data? This will delete all images and analysis results.')) {
+                return;
+            }
+
+            try {
+                document.getElementById('uploadStatus').innerHTML = 'Clearing all data...';
+                const progressContainer = document.getElementById('progressContainer');
+                const progressBar = document.getElementById('progressBar');
+                const progressText = progressBar.querySelector('.progress-text');
+                
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '50%';
+                progressText.textContent = '50%';
+                
+                const response = await fetch('/clear-db/', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Show completion
+                progressBar.style.width = '100%';
+                progressText.textContent = '100%';
+
+                // Clear everything
+                document.getElementById('csvFile').value = '';
+                document.getElementById('fileName').textContent = '';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('resultsContainer').innerHTML = '';
+                
+                document.getElementById('uploadStatus').innerHTML = 'All data cleared successfully!';
+                
+                // Hide progress bar and reset after delay
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    document.getElementById('uploadStatus').innerHTML = '';
+                }, 1000);
+
+            } catch (error) {
+                document.getElementById('uploadStatus').innerHTML = `Error clearing data: ${error.message}`;
+                progressContainer.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 
